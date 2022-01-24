@@ -7,7 +7,15 @@ let player;
 let gravity;
 let obstacles;
 let gamespeed;
-let key = [];
+let key = {};
+
+
+document.addEventListener('keydown', function (evt){
+    key[evt.code] = true
+});
+document.addEventListener('keyup',function (evt){
+    key[evt.code] = false
+})
 
 
  class Player {
@@ -17,12 +25,54 @@ let key = [];
          this.w = w;
          this.h = h;
          this.color = color;
-         // đặt dy là hướng nhảy
+         // đặt dy: hay lực hướng là vận tốc nhảy
          this.dy = 0
          this.jumpForce = 15
-
-
+         this.originalHeight=h;
+         this.ground = false
+         this.jumptimer = 0;
      }
+     Animate(){
+      //jump
+         if(key['Space'] ){
+             this.Jump()
+         }
+         else {
+             this.jumptimer=0;
+         }
+         this.y += this.dy
+         // Gravity
+         if(this.y + this.h < canvas.height){
+             this.dy += gravity
+             this.ground=false
+         }
+         else {
+             this.dy = 0;
+             this.ground=true;
+             this.y = canvas.height - this.h
+         }
+
+
+
+         this.Draw()
+     }
+
+         Jump () {
+             if (this.ground && this.jumptimer === 0) {
+                 this.jumptimer = 1
+                 this.dy = this.jumpForce
+             } else if (this.jumptimer > 0 && this.jumptimer < 15) {
+
+                 this.jumptimer++;
+                 this.dy = -this.jumpForce - (this.jumptimer/50);
+             }
+         }
+
+
+
+
+
+
      Draw(){
          ctx.beginPath();
          ctx.fillStyle = this.color;
@@ -43,7 +93,14 @@ let key = [];
      score = 0;
      highscore = 0;
 
+
      player = new Player(25,canvas.height - 150, 50, 50, '#FF5858');
-     player.Draw()
+     requestAnimationFrame(Update);
+ }
+ function Update(){
+     requestAnimationFrame(Update);
+     ctx.clearRect(0,0,canvas.width,canvas.height);
+
+     player.Animate()
  }
  Start();
