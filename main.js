@@ -1,17 +1,20 @@
 const canvas = document.getElementById("game")
 const ctx = canvas.getContext("2d")
 // Khai báo biến
-let score;
-let highscore;
+let Score;
+let scoreText
+let highScore;
+let highScoreText;
 let player;
 let gravity;
-let obstacles;
-let gamespeed;
+let obstacles=[];
+let gameSpeed;
 let key = {};
 
 
 document.addEventListener('keydown', function (evt){
     key[evt.code] = true
+
 });
 document.addEventListener('keyup',function (evt){
     key[evt.code] = false
@@ -40,6 +43,14 @@ document.addEventListener('keyup',function (evt){
          else {
              this.jumptimer=0;
          }
+
+         if (key['KeyS']){
+             this.h = this.originalHeight/2;
+         }
+         else {
+             this.h = this.originalHeight;
+         }
+
          this.y += this.dy
          // Gravity
          if(this.y + this.h < canvas.height){
@@ -81,26 +92,152 @@ document.addEventListener('keyup',function (evt){
      }
  }
 
+
+ class Obstacle {
+    constructor(x,y,w,h,color) {
+        this.x=x
+        this.y=y
+        this.w=w
+        this.h=h
+        this.color=color
+
+        //dx là vận tốc theo chiều trục X
+        this.dx = -gameSpeed;
+    }
+
+    update () {
+        this.x += this.dx
+        this.Draw();
+        this.dx=-gameSpeed
+    }
+
+    Draw (){
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.w, this.h);
+        ctx.closePath();
+    }
+ }
+
+
+ class Text {
+     constructor(t,x,y,a,c,s) {
+         this.t = t
+         this.x=x
+         this.y=y
+         this.a=a
+         this.c=c
+         this.s=s
+     }
+     Draw () {
+         ctx.beginPath();
+         ctx.fillStyle = this.c;
+         ctx.font = this.s + "sans-serif";
+         ctx.textAlign = this.a
+         ctx.fillText(this.t, this.x, this.y);
+         ctx.closePath();
+     }
+ }
+
+ function SpawnObstacle (){
+    let size = RandomIntInRange (20,70);
+     let type = RandomIntInRange (0,1);
+     let obstacle = new Obstacle(canvas.width+size,canvas.height - size,size,size,'#2484E4');
+
+
+     if (type == 1){
+         obstacle.y -= player.originalHeight-10;
+     }
+     obstacles.push(obstacle);
+ }
+
+ function RandomIntInRange (min,max){
+    return Math.round(Math.random()*(max-min)+min);
+ }
+
+
+
+
  function Start(){
      canvas.width =window.innerWidth;
      canvas.height=window.innerHeight;
 
-     ctx.font = "20px sans-seri";
+     ctx.font = "20px sans-serif";
 
-     gamespeed = 3;
+     gameSpeed = 3;
      gravity = 1;
 
-     score = 0;
-     highscore = 0;
+     Score = 0;
+     highScore = 0;
+
+     if(localStorage.getItem('highScore')){
+         highScore = localStorage.getItem('highScore');
+     }
 
 
-     player = new Player(25,canvas.height - 150, 50, 50, '#FF5858');
+     player = new Player(25,0, 50, 50, '#FF5858');
+
+     scoreText = new Text("Score: " + Score, 25, 25, "left","#212121","20");
+     highScoreText = new Text("HighScore" +highScore, canvas.width - 25, 25, "right", "#212121","20")
+
      requestAnimationFrame(Update);
  }
+
+ // bộ đếm thời gian ban đầu
+ let initialSpawnTimer = 200;
+let spawnTimer = initialSpawnTimer
  function Update(){
      requestAnimationFrame(Update);
      ctx.clearRect(0,0,canvas.width,canvas.height);
 
-     player.Animate()
+     spawnTimer --;
+     if (spawnTimer <= 0){
+         SpawnObstacle();
+         console.log(obstacles)
+         spawnTimer = initialSpawnTimer - gameSpeed *8;
+          if (spawnTimer<60){
+              spawnTimer = 60
+          }
+     }
+
+     for (let i = 0; i < obstacles.length; i++) {
+         let o = obstacles[i];
+       if(o.x + o.width<0){
+           obstacles.splice(i,1)
+       }
+
+       if(
+           player.x < o.x + o.w &&
+           player.x + player.w>o.x &&
+           player.y< o.y + o.h &&
+           player.y + player.h >o.y
+       ){
+           obstacles=[]
+           Score = 0
+           spawnTimer=initialSpawnTimer
+           alert("game over")
+           gameSpeed = 3
+           window.localStorage.setItem('highScore', highScore)
+       }
+
+
+         o.update();
+     }
+
+
+     player.Animate();
+     Score ++;
+     scoreText.t = "Score: " + Score;
+     scoreText.Draw()
+
+     if (Score>highScore){
+         highScore=Score;
+         highScoreText.t = "HighScore: " + highScore;
+
+     }
+
+     highScoreText.Draw()
+
+     gameSpeed += 0.003
  }
  Start();
